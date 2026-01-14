@@ -7,10 +7,10 @@ Project made to follow Handmade Hero + Handmade Penguin
 * SDL 3
 
 ## Build
-(First time only) Get SDL libraries
+(First time only) Initialize SDL submodule
 
 ```
-git clone https://github.com/libsdl-org/SDL.git vendored/SDL
+git submodule update --init --recursive
 ```
 
 Setup the build system
