@@ -1,0 +1,12 @@
+[
+  {
+    "label": "cmake: configure",
+    "command": "cmake",
+    "args": ["-S", ".", "-B", "build"],
+  },
+  {
+    "label": "cmake: build",
+    "command": "cmake",
+    "args": ["--build", "build"],
+  },
+]

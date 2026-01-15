@@ -1,12 +1,8 @@
 [
   {
     "label": "Debug Handmade Thrash",
-    "build": {
-      "command": "./build.sh",
-      "args": [],
-      "cwd": "$ZED_WORKTREE_ROOT",
-    },
-    "program": "$ZED_WORKTREE_ROOT/build/handmade_thrash",
+    "build": "cmake: build",
+    "program": "$ZED_WORKTREE_ROOT/build/Debug/handmade_thrash",
     "request": "launch",
     "adapter": "CodeLLDB",
   },

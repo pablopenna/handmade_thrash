@@ -6,6 +6,9 @@ project(handmade_thrash)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 
+# Add debug symbols
+set(CMAKE_BUILD_TYPE Debug)
+
 # Generate compile_commands.json file so that IDEs like Zed can properly detect SDL libraries
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 

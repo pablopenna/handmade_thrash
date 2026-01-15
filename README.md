@@ -9,17 +9,17 @@ Project made to follow Handmade Hero + Handmade Penguin
 ## Build
 (First time only) Initialize SDL submodule
 
-```
+```sh
 git submodule update --init --recursive
 ```
 
 Setup the build system
-```
+```sh
 cmake -S . -B build
 cmake --build build
 ```
 
 ## Resources
 * Handmade Penguin - https://davidgow.net/handmadepenguin
-* SDL + CMake setup - https://github.com/libsdl-org/SDL/blob/main/docs/INTRO-cmake.md
+* SDL + CMake setup - https://github.com/libsdl-org/SDL/blob/main/docs/INTRO-cmake.md, https://github.com/libsdl-org/SDL/blob/main/docs/README-cmake.md
 * SDL Linux Readme - https://wiki.libsdl.org/SDL3/README-linux#build-dependencies
