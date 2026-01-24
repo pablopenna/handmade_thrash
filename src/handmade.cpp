@@ -15,6 +15,8 @@
 #define global_variable static
 #define private_function static
 
+#define BYTES_PER_PIXEL 4
+
 global_variable SDL_Texture* texture;
 global_variable int textureWidth;
 global_variable void* pixels;
@@ -44,7 +46,7 @@ private_function void resizeTexture(SDL_Renderer *renderer, int width, int heigh
         width,
         height
     );
-    pixels = malloc(width * height * 4);
+    pixels = malloc(width * height * BYTES_PER_PIXEL);
     textureWidth = width;
 }
 
