@@ -2,3 +2,4 @@
 
 void showAvailableDrivers();
 void claimWindowForGpu(SDL_Window *window);
+void printRenderName(SDL_Renderer* renderer);

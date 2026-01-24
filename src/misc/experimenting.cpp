@@ -24,3 +24,8 @@ void claimWindowForGpu(SDL_Window *window) {
     bool success = SDL_ClaimWindowForGPUDevice(gpuDevice, window);
     printf("was successful claiming window for GPU: %b\n", success);
 }
+
+void printRenderName(SDL_Renderer* renderer) {
+    const char* render_name = SDL_GetRendererName(renderer);
+    printf("Renderer name: %s\n", render_name);
+}

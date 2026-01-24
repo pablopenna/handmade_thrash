@@ -15,9 +15,40 @@
 #define global_variable static
 #define private_function static
 
-global_variable bool isRunning;
+global_variable SDL_Texture* texture;
+global_variable int textureWidth;
+global_variable void* pixels;
 
-bool handleEvent(SDL_Event *event) {
+void handleFatalError() {
+    const char *errorMessage = SDL_GetError();
+    printf("A fatal error occurred: %s", errorMessage);
+
+    SDL_Quit();
+
+    exit((unsigned char)255);
+}
+
+private_function void resizeTexture(SDL_Renderer *renderer, int width, int height) {
+    if(texture) {
+        SDL_DestroyTexture(texture);
+    }
+
+    if(pixels) {
+        free(pixels);
+    }
+
+    texture = SDL_CreateTexture(
+        renderer,
+        SDL_PIXELFORMAT_RGBA8888, // 4 bytes per pixel
+        SDL_TEXTUREACCESS_STREAMING,
+        width,
+        height
+    );
+    pixels = malloc(width * height * 4);
+    textureWidth = width;
+}
+
+private_function bool handleEvent(SDL_Event *event) {
     bool shouldQuit = false;
 
     // https://wiki.libsdl.org/SDL3/SDL_EventType
@@ -28,10 +59,15 @@ bool handleEvent(SDL_Event *event) {
             shouldQuit = true;
         } break;
 
-        case SDL_EVENT_WINDOW_RESIZED:
+        case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
         {
             int newWidth = ((SDL_WindowEvent*)event)->data1;
             int newHeight = ((SDL_WindowEvent*)event)->data2;
+
+            SDL_Window *window = SDL_GetWindowFromID(event->window.windowID);
+            SDL_Renderer *renderer = SDL_GetRenderer(window);
+            // This event is also emitted on window creation so the texture will always be initialized by this
+            resizeTexture(renderer, newWidth, newHeight);
             printf("Resized to %d x %d\n", newWidth, newHeight);
         } break;
 
@@ -39,30 +75,20 @@ bool handleEvent(SDL_Event *event) {
         {
             SDL_Window *window = SDL_GetWindowFromID(event->window.windowID);
             SDL_Renderer *renderer = SDL_GetRenderer(window);
-            persistent_variable bool isWhite = true;
 
-            if(isWhite) {
-                SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-            } else {
-                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+            if(!SDL_UpdateTexture(texture, 0, pixels, textureWidth)) {
+                handleFatalError();
             }
-            isWhite = !isWhite;
 
-            SDL_RenderClear(renderer);
+            if(!SDL_RenderTexture(renderer, texture, 0, 0)) {
+                handleFatalError();
+            }
+
             SDL_RenderPresent(renderer);
         } break;
     }
 
     return(shouldQuit);
-}
-
-void handleFatalError() {
-    const char *errorMessage = SDL_GetError();
-    printf("A fatal error occurred: %s", errorMessage);
-
-    SDL_Quit();
-
-    exit((unsigned char)255);
 }
 
 int main(int argc, char *argv[]) {
@@ -91,7 +117,6 @@ int main(int argc, char *argv[]) {
     if(!renderer) {
         handleFatalError();
     }
-    const char* render_name = SDL_GetRendererName(renderer);
 
     for(;;) {
         SDL_Event event;
