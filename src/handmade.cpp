@@ -9,6 +9,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <windows.h>
+
 #include "misc/experimenting.h"
 
 #define persistent_variable static
@@ -23,7 +25,8 @@ global_variable void* pixels;
 
 void handleFatalError() {
     const char *errorMessage = SDL_GetError();
-    printf("A fatal error occurred: %s", errorMessage);
+    OutputDebugString("A fatal error occurred");
+    OutputDebugString(errorMessage);
 
     SDL_Quit();
 
@@ -57,7 +60,7 @@ private_function bool handleEvent(SDL_Event *event) {
     switch (event->type) {
         case SDL_EVENT_QUIT:
         {
-            printf("SDL_EVENT_QUIT\n");
+            OutputDebugString("SDL_EVENT_QUIT\n");
             shouldQuit = true;
         } break;
 
@@ -70,7 +73,8 @@ private_function bool handleEvent(SDL_Event *event) {
             SDL_Renderer *renderer = SDL_GetRenderer(window);
             // This event is also emitted on window creation so the texture will always be initialized by this
             resizeTexture(renderer, newWidth, newHeight);
-            printf("Resized to %d x %d\n", newWidth, newHeight);
+
+            OutputDebugString("Resized");
         } break;
 
         case SDL_EVENT_WINDOW_EXPOSED:
@@ -93,8 +97,13 @@ private_function bool handleEvent(SDL_Event *event) {
     return(shouldQuit);
 }
 
-int main(int argc, char *argv[]) {
-    // SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Handmade Thrash", "This is Handmade Thrash", 0);
+int WinMain(
+    HINSTANCE hInstance,
+    HINSTANCE hPrevInstance,
+    LPSTR     lpCmdLine,
+    int       nShowCmd
+) {
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Handmade Thrash", "This is Handmade Thrash", 0);
 
     if(!SDL_Init(SDL_INIT_VIDEO)) {
         handleFatalError();
