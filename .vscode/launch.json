@@ -1,0 +1,12 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug handmade_thrash",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/handmade_thrash",
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
