@@ -15,8 +15,15 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # This assumes the SDL source is available in vendored/SDL
 add_subdirectory(vendored/SDL EXCLUDE_FROM_ALL)
 
+# Define files to compile
+file(GLOB SOURCES "src/*.cpp" "src/**/*.cpp")
+file(GLOB HEADERS "src/*.h" "src/**/*.h")
+
 # Create your game executable target as usual
-add_executable(handmade_thrash WIN32 src/handmade.cpp)
+add_executable(handmade_thrash WIN32
+    ${SOURCES}
+    ${HEADERS}
+)
 
 # Link to the actual SDL3 library.
 target_link_libraries(handmade_thrash PRIVATE SDL3::SDL3)

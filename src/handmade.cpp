@@ -1,7 +1,6 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_error.h>
 #include <SDL3/SDL_events.h>
-#include "SDL3/SDL_gpu.h"
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_video.h>
@@ -9,6 +8,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "misc/experimenting.h"
 
 #define persistent_variable static
 #define global_variable static
@@ -38,7 +39,7 @@ bool handleEvent(SDL_Event *event) {
         {
             SDL_Window *window = SDL_GetWindowFromID(event->window.windowID);
             SDL_Renderer *renderer = SDL_GetRenderer(window);
-            static bool isWhite = true;
+            persistent_variable bool isWhite = true;
 
             if(isWhite) {
                 SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
@@ -64,21 +65,6 @@ void handleFatalError() {
     exit((unsigned char)255);
 }
 
-void showAvailableDrivers() {
-    int numDrivers = SDL_GetNumRenderDrivers();
-    printf("Nº available drivers: %d\n", numDrivers);
-    for(int i=0;i<numDrivers;i++) {
-        const char* info = SDL_GetRenderDriver(i);
-        printf("Available driver: %s\n", info);
-    }
-}
-
-void claimWindowForGpu(SDL_Window *window) {
-    SDL_GPUDevice *gpuDevice = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_PRIVATE | SDL_GPU_SHADERFORMAT_SPIRV, true, 0);
-    bool success = SDL_ClaimWindowForGPUDevice(gpuDevice, window);
-    printf("was successful claiming window for GPU: %b\n", success);
-}
-
 int main(int argc, char *argv[]) {
     // SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Handmade Thrash", "This is Handmade Thrash", 0);
 
@@ -98,8 +84,6 @@ int main(int argc, char *argv[]) {
     if(!window) {
         handleFatalError();
     }
-
-    showAvailableDrivers();
 
     claimWindowForGpu(window);
 
