@@ -25,5 +25,5 @@ add_executable(handmade_thrash WIN32
     ${HEADERS}
 )
 
-# Link to the actual SDL3 library.
-target_link_libraries(handmade_thrash PRIVATE SDL3::SDL3)
+# Link to the actual SDL library.
+target_link_libraries(handmade_thrash PRIVATE SDL2::SDL2)

@@ -1,9 +1,4 @@
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_error.h>
-#include <SDL3/SDL_events.h>
-#include <SDL3/SDL_init.h>
-#include <SDL3/SDL_render.h>
-#include <SDL3/SDL_video.h>
+#include <SDL.h>
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -18,8 +13,8 @@
 
 // Segmentation fault occurs when quickly resizing window when using mmap
 // https://gist.github.com/ITotalJustice/eb9c47d0fdbc34e275b2ca79460bf0e3
-#define USE_MMAP 0
-#define BYTES_PER_PIXEL 8
+#define USE_MMAP 1
+#define BYTES_PER_PIXEL 4
 
 global_variable SDL_Texture* texture;
 global_variable int textureWidth;
@@ -36,6 +31,7 @@ void handleFatalError() {
 
 private_function void resizeTexture(SDL_Renderer *renderer, int width, int height) {
     int pixelsSize = width * height * BYTES_PER_PIXEL;
+    printf("hello?");
 
     if(texture) {
         SDL_DestroyTexture(texture);
@@ -49,13 +45,15 @@ private_function void resizeTexture(SDL_Renderer *renderer, int width, int heigh
         }
     }
 
+    printf("before");
     texture = SDL_CreateTexture(
         renderer,
-        SDL_PIXELFORMAT_RGBA8888, // 4 bytes per pixel
+        SDL_PIXELFORMAT_ARGB8888, // 4 bytes per pixel
         SDL_TEXTUREACCESS_STREAMING,
         width,
         height
     );
+    printf("after");
 
     if(USE_MMAP) {
         pixels = mmap(
@@ -78,41 +76,52 @@ private_function void resizeTexture(SDL_Renderer *renderer, int width, int heigh
 
 private_function bool handleEvent(SDL_Event *event) {
     bool shouldQuit = false;
-
     // https://wiki.libsdl.org/SDL3/SDL_EventType
     switch (event->type) {
-        case SDL_EVENT_QUIT:
+        case SDL_QUIT:
         {
             printf("SDL_EVENT_QUIT\n");
             shouldQuit = true;
         } break;
 
-        case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+        case SDL_WINDOWEVENT:
         {
-            int newWidth = ((SDL_WindowEvent*)event)->data1;
-            int newHeight = ((SDL_WindowEvent*)event)->data2;
+            switch(event->window.event) {
+                case SDL_WINDOWEVENT_SIZE_CHANGED:
+                {
+                    int newWidth = ((SDL_WindowEvent*)event)->data1;
+                    int newHeight = ((SDL_WindowEvent*)event)->data2;
 
-            SDL_Window *window = SDL_GetWindowFromID(event->window.windowID);
-            SDL_Renderer *renderer = SDL_GetRenderer(window);
-            // This event is also emitted on window creation so the texture will always be initialized by this
-            resizeTexture(renderer, newWidth, newHeight);
-            printf("Resized to %d x %d\n", newWidth, newHeight);
-        } break;
+                    SDL_Window *window = SDL_GetWindowFromID(event->window.windowID);
+                    SDL_Renderer *renderer = SDL_GetRenderer(window);
+                    // This event is also emitted on window creation so the texture will always be initialized by this
+                    resizeTexture(renderer, newWidth, newHeight);
+                    printf("Resized to %d x %d\n", newWidth, newHeight);
+                } break;
 
-        case SDL_EVENT_WINDOW_EXPOSED:
-        {
-            SDL_Window *window = SDL_GetWindowFromID(event->window.windowID);
-            SDL_Renderer *renderer = SDL_GetRenderer(window);
+                case SDL_WINDOWEVENT_EXPOSED:
+                {
+                    SDL_Window *window = SDL_GetWindowFromID(event->window.windowID);
+                    SDL_Renderer *renderer = SDL_GetRenderer(window);
 
-            if(!SDL_UpdateTexture(texture, 0, pixels, textureWidth)) {
-                handleFatalError();
+                    if(!texture) {
+                        printf("Initializing texture!\n");
+                        int width, height;
+                        SDL_GetWindowSize(window, &width, &height);
+                        resizeTexture(renderer, width, height);
+                    }
+
+                    if(SDL_UpdateTexture(texture, 0, pixels, textureWidth * BYTES_PER_PIXEL) != 0) {
+                        handleFatalError();
+                    }
+
+                    if(SDL_RenderCopy(renderer, texture, 0, 0) != 0) {
+                        handleFatalError();
+                    }
+
+                    SDL_RenderPresent(renderer);
+                } break;
             }
-
-            if(!SDL_RenderTexture(renderer, texture, 0, 0)) {
-                handleFatalError();
-            }
-
-            SDL_RenderPresent(renderer);
         } break;
     }
 
@@ -122,7 +131,7 @@ private_function bool handleEvent(SDL_Event *event) {
 int main(int argc, char *argv[]) {
     // SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Handmade Thrash", "This is Handmade Thrash", 0);
 
-    if(!SDL_Init(SDL_INIT_VIDEO)) {
+    if(SDL_Init(SDL_INIT_VIDEO) != 0) {
         handleFatalError();
     }
 
@@ -130,6 +139,8 @@ int main(int argc, char *argv[]) {
 
     window = SDL_CreateWindow(
         "Handmade Thrash",
+        SDL_WINDOWPOS_UNDEFINED,
+        SDL_WINDOWPOS_UNDEFINED,
         800,
         600,
         0 | SDL_WINDOW_RESIZABLE
@@ -139,9 +150,7 @@ int main(int argc, char *argv[]) {
         handleFatalError();
     }
 
-    claimWindowForGpu(window);
-
-    SDL_Renderer *renderer = SDL_CreateRenderer(window, 0);
+    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
     if(!renderer) {
         handleFatalError();
     }
