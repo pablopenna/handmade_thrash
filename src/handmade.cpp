@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/mman.h>
 
 #include "misc/experimenting.h"
 
@@ -15,7 +16,10 @@
 #define global_variable static
 #define private_function static
 
-#define BYTES_PER_PIXEL 4
+// Segmentation fault occurs when quickly resizing window when using mmap
+// https://gist.github.com/ITotalJustice/eb9c47d0fdbc34e275b2ca79460bf0e3
+#define USE_MMAP 0
+#define BYTES_PER_PIXEL 8
 
 global_variable SDL_Texture* texture;
 global_variable int textureWidth;
@@ -31,12 +35,18 @@ void handleFatalError() {
 }
 
 private_function void resizeTexture(SDL_Renderer *renderer, int width, int height) {
+    int pixelsSize = width * height * BYTES_PER_PIXEL;
+
     if(texture) {
         SDL_DestroyTexture(texture);
     }
 
     if(pixels) {
-        free(pixels);
+        if(USE_MMAP) {
+            munmap(pixels, pixelsSize);
+        } else {
+            free(pixels);
+        }
     }
 
     texture = SDL_CreateTexture(
@@ -46,7 +56,23 @@ private_function void resizeTexture(SDL_Renderer *renderer, int width, int heigh
         width,
         height
     );
-    pixels = malloc(width * height * BYTES_PER_PIXEL);
+
+    if(USE_MMAP) {
+        pixels = mmap(
+            0,
+            pixelsSize,
+            PROT_READ | PROT_WRITE,
+            MAP_PRIVATE | MAP_ANONYMOUS,
+            -1,
+            0
+        );
+        if (pixels == MAP_FAILED) {
+            perror("mmap");
+            exit(1);
+        }
+    } else {
+        pixels = malloc(pixelsSize);
+    }
     textureWidth = width;
 }
 
