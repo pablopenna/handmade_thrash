@@ -13,9 +13,6 @@
 #define global_variable static
 #define private_function static
 
-// Segmentation fault occurs when quickly resizing window when using mmap
-// https://gist.github.com/ITotalJustice/eb9c47d0fdbc34e275b2ca79460bf0e3
-#define USE_MMAP 1
 #define BYTES_PER_PIXEL 4
 
 typedef int8_t int8;
@@ -43,13 +40,13 @@ void handleFatalError() {
 }
 
 private_function void renderGradient(int blueOffset, int greenOffset)
-{    
+{
     int width = bitmapWidth;
     int height = bitmapHeight;
 
     int pitch = width * BYTES_PER_PIXEL;
-    
-    uint8 *row = (uint8 *)bitmap;    
+
+    uint8 *row = (uint8 *)bitmap;
     for(int y = 0; y<bitmapHeight;++y) {
         uint32 *pixel = (uint32 *)row;
         for(int x = 0; x < bitmapWidth; ++x) {
@@ -64,7 +61,8 @@ private_function void renderGradient(int blueOffset, int greenOffset)
 }
 
 private_function void resizeTexture(SDL_Renderer *renderer, int width, int height) {
-    int bitmapSize = width * height * BYTES_PER_PIXEL;
+    int newBitmapSize = width * height * BYTES_PER_PIXEL;
+    int previousBitmapSize = bitmapWidth * bitmapHeight * BYTES_PER_PIXEL;
 
     if(texture) {
         SDL_DestroyTexture(texture);
@@ -79,29 +77,17 @@ private_function void resizeTexture(SDL_Renderer *renderer, int width, int heigh
     );
 
     if(bitmap) {
-        if(USE_MMAP) {
-            munmap(bitmap, bitmapSize);
-        } else {
-            free(bitmap);
-        }
+        munmap(bitmap, previousBitmapSize);
     }
 
-    if(USE_MMAP) {
-        bitmap = mmap(
-            0,
-            bitmapSize,
-            PROT_READ | PROT_WRITE,
-            MAP_PRIVATE | MAP_ANONYMOUS,
-            -1,
-            0
-        );
-        if (bitmap == MAP_FAILED) {
-            perror("mmap");
-            exit(1);
-        }
-    } else {
-        bitmap = malloc(bitmapSize);
-    }
+    bitmap = mmap(
+        0,
+        newBitmapSize,
+        PROT_READ | PROT_WRITE,
+        MAP_PRIVATE | MAP_ANONYMOUS,
+        -1,
+        0
+    );
 
     bitmapWidth = width;
     bitmapHeight = height;
@@ -177,8 +163,8 @@ int main(int argc, char *argv[]) {
         "Handmade Thrash",
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
-        800,
-        600,
+        640,
+        480,
         0 | SDL_WINDOW_RESIZABLE
     );
 
@@ -204,7 +190,7 @@ int main(int argc, char *argv[]) {
 
         ++xOffset;
         yOffset += 2;
-     
+
         // Sleep not to use 100% CPU
         usleep(10 * 1000); // ms * 1000
     }
