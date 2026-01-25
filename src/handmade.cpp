@@ -31,11 +31,18 @@ void handleFatalError() {
 
 private_function void resizeTexture(SDL_Renderer *renderer, int width, int height) {
     int pixelsSize = width * height * BYTES_PER_PIXEL;
-    printf("hello?");
 
     if(texture) {
         SDL_DestroyTexture(texture);
     }
+
+    texture = SDL_CreateTexture(
+        renderer,
+        SDL_PIXELFORMAT_ARGB8888, // 4 bytes per pixel
+        SDL_TEXTUREACCESS_STREAMING,
+        width,
+        height
+    );
 
     if(pixels) {
         if(USE_MMAP) {
@@ -44,16 +51,6 @@ private_function void resizeTexture(SDL_Renderer *renderer, int width, int heigh
             free(pixels);
         }
     }
-
-    printf("before");
-    texture = SDL_CreateTexture(
-        renderer,
-        SDL_PIXELFORMAT_ARGB8888, // 4 bytes per pixel
-        SDL_TEXTUREACCESS_STREAMING,
-        width,
-        height
-    );
-    printf("after");
 
     if(USE_MMAP) {
         pixels = mmap(
@@ -94,7 +91,6 @@ private_function bool handleEvent(SDL_Event *event) {
 
                     SDL_Window *window = SDL_GetWindowFromID(event->window.windowID);
                     SDL_Renderer *renderer = SDL_GetRenderer(window);
-                    // This event is also emitted on window creation so the texture will always be initialized by this
                     resizeTexture(renderer, newWidth, newHeight);
                     printf("Resized to %d x %d\n", newWidth, newHeight);
                 } break;
