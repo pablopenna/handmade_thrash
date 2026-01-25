@@ -19,18 +19,23 @@ cmake -S . -B build
 cmake --build build
 ```
 
+All in one:
+
+```sh
+rm -rf build && cmake -S . -B build && cmake --build build && ./build/Debug/handmade_thrash
+```
+
+## Procedures
+
+### Undo submodule changes
+
+```sh
+git submodule deinit -f .
+git submodule update --init
+```
+
 ## Known issues
 
-### \[Linux\] Segmentation fault when resizing window
-
-Haven't found root-cause. Happens in both SDL2 and SDL3. **It only happens when using mmap to allocate memory for bitmap**. Does not seem to be determined by the size of the window.
-
-### \[Linux\] Ram usage increase slowly but constantly on SDL3
-There seems to be a memory leak in SDL3 for Linux in some scenarios where Wayland is involved
-
-https://github.com/libsdl-org/SDL/issues/10273
-
-This does not seem to happen in SDL2.
 
 ## Troubleshooting
 
@@ -39,9 +44,6 @@ This does not seem to happen in SDL2.
 ``` sh
 valgrind --leak-check=full ./build/Debug/handmade_thrash 
 ```
-### Segmentation fault when resizing window when using mmap to allocate pixels
-
-Seems to be related to memory leak below. Happens in SDL2 as well.
 
 ## Resources
 * Handmade Penguin - https://davidgow.net/handmadepenguin
