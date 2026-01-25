@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/mman.h>
+#include <stdint.h>
+#include<unistd.h>
 
 #include "misc/experimenting.h"
 
@@ -16,9 +18,20 @@
 #define USE_MMAP 1
 #define BYTES_PER_PIXEL 4
 
+typedef int8_t int8;
+typedef int16_t int16;
+typedef int32_t int32;
+typedef int64_t int64;
+
+typedef uint8_t uint8;
+typedef uint16_t uint16;
+typedef uint32_t uint32;
+typedef uint64_t uint64;
+
 global_variable SDL_Texture* texture;
-global_variable int textureWidth;
-global_variable void* pixels;
+global_variable void* bitmap;
+global_variable int bitmapWidth;
+global_variable int bitmapHeight;
 
 void handleFatalError() {
     const char *errorMessage = SDL_GetError();
@@ -29,8 +42,29 @@ void handleFatalError() {
     exit((unsigned char)255);
 }
 
+private_function void renderGradient(int blueOffset, int greenOffset)
+{    
+    int width = bitmapWidth;
+    int height = bitmapHeight;
+
+    int pitch = width * BYTES_PER_PIXEL;
+    
+    uint8 *row = (uint8 *)bitmap;    
+    for(int y = 0; y<bitmapHeight;++y) {
+        uint32 *pixel = (uint32 *)row;
+        for(int x = 0; x < bitmapWidth; ++x) {
+            uint8 Blue = (x + blueOffset);
+            uint8 Green = (y + greenOffset);
+
+            *pixel++ = ((Green << 8) | Blue);
+        }
+
+        row += pitch;
+    }
+}
+
 private_function void resizeTexture(SDL_Renderer *renderer, int width, int height) {
-    int pixelsSize = width * height * BYTES_PER_PIXEL;
+    int bitmapSize = width * height * BYTES_PER_PIXEL;
 
     if(texture) {
         SDL_DestroyTexture(texture);
@@ -44,41 +78,62 @@ private_function void resizeTexture(SDL_Renderer *renderer, int width, int heigh
         height
     );
 
-    if(pixels) {
+    if(bitmap) {
         if(USE_MMAP) {
-            munmap(pixels, pixelsSize);
+            munmap(bitmap, bitmapSize);
         } else {
-            free(pixels);
+            free(bitmap);
         }
     }
 
     if(USE_MMAP) {
-        pixels = mmap(
+        bitmap = mmap(
             0,
-            pixelsSize,
+            bitmapSize,
             PROT_READ | PROT_WRITE,
             MAP_PRIVATE | MAP_ANONYMOUS,
             -1,
             0
         );
-        if (pixels == MAP_FAILED) {
+        if (bitmap == MAP_FAILED) {
             perror("mmap");
             exit(1);
         }
     } else {
-        pixels = malloc(pixelsSize);
+        bitmap = malloc(bitmapSize);
     }
-    textureWidth = width;
+
+    bitmapWidth = width;
+    bitmapHeight = height;
+}
+
+private_function void rerenderWindow(SDL_Window *window, SDL_Renderer *renderer) {
+    if(!texture) {
+        printf("Initializing texture!\n");
+        int width, height;
+        SDL_GetWindowSize(window, &width, &height);
+        resizeTexture(renderer, width, height);
+    }
+
+    if(SDL_UpdateTexture(texture, 0, bitmap, bitmapWidth * BYTES_PER_PIXEL) != 0) {
+        handleFatalError();
+    }
+
+    if(SDL_RenderCopy(renderer, texture, 0, 0) != 0) {
+        handleFatalError();
+    }
+
+    SDL_RenderPresent(renderer);
 }
 
 private_function bool handleEvent(SDL_Event *event) {
-    bool shouldQuit = false;
+    bool keepRunning = true;
     // https://wiki.libsdl.org/SDL3/SDL_EventType
     switch (event->type) {
         case SDL_QUIT:
         {
             printf("SDL_EVENT_QUIT\n");
-            shouldQuit = true;
+            keepRunning = false;
         } break;
 
         case SDL_WINDOWEVENT:
@@ -100,28 +155,13 @@ private_function bool handleEvent(SDL_Event *event) {
                     SDL_Window *window = SDL_GetWindowFromID(event->window.windowID);
                     SDL_Renderer *renderer = SDL_GetRenderer(window);
 
-                    if(!texture) {
-                        printf("Initializing texture!\n");
-                        int width, height;
-                        SDL_GetWindowSize(window, &width, &height);
-                        resizeTexture(renderer, width, height);
-                    }
-
-                    if(SDL_UpdateTexture(texture, 0, pixels, textureWidth * BYTES_PER_PIXEL) != 0) {
-                        handleFatalError();
-                    }
-
-                    if(SDL_RenderCopy(renderer, texture, 0, 0) != 0) {
-                        handleFatalError();
-                    }
-
-                    SDL_RenderPresent(renderer);
+                    rerenderWindow(window, renderer);
                 } break;
             }
         } break;
     }
 
-    return(shouldQuit);
+    return(keepRunning);
 }
 
 int main(int argc, char *argv[]) {
@@ -151,14 +191,22 @@ int main(int argc, char *argv[]) {
         handleFatalError();
     }
 
-    for(;;) {
+    int xOffset = 0;
+    int yOffset = 0;
+    bool keepRunning = true;
+    while(keepRunning) {
         SDL_Event event;
-        if(!SDL_WaitEvent(&event)) {
-            handleFatalError();
+        while(SDL_PollEvent(&event)) {
+            keepRunning = handleEvent(&event);
         }
-        if(handleEvent(&event)) {
-            break;
-        }
+        renderGradient(xOffset, yOffset);
+        rerenderWindow(window, renderer);
+
+        ++xOffset;
+        yOffset += 2;
+     
+        // Sleep not to use 100% CPU
+        usleep(10 * 1000); // ms * 1000
     }
 
     SDL_Quit();
